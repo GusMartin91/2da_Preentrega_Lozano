@@ -1,8 +1,6 @@
 const productDetailsSocket = io()
 const productList = document.getElementById('productsList');
 
-productDetailsSocket.emit("message", "Cliente (Product Details)")
-
 let editModal = document.getElementById('editModal')
 let editForm = document.getElementById('editForm')
 function botonEditar(pid) {

@@ -1,5 +1,6 @@
 const cartSocket = io();
 const cartContainer = document.getElementById('cart-container');
+const totalAmountElement = document.getElementById('total-amount');
 const userEmail = document.getElementById('user-email');
 const currentUserEmail = localStorage.getItem('currentUserEmail');
 
@@ -10,7 +11,11 @@ userEmail.innerText = `Usuario: ${currentUserEmail}`;
 
 cartSocket.on('productsCartInfo', (productsInfo) => {
     cartContainer.innerHTML=''
+    let totalAmount = 0;
     productsInfo.forEach(product => {
+        const productTotal = product.quantity * product.info.price;
+        totalAmount += productTotal;
+
         cartContainer.innerHTML +=`
         <div class="card mb-3 p-2">
             <div class="row g-0 p-auto">
@@ -38,6 +43,7 @@ cartSocket.on('productsCartInfo', (productsInfo) => {
             </div>
         </div>`;
     })
+    totalAmountElement.innerText = `${totalAmount.toFixed(2)}`
 });
 
 cartContainer.addEventListener('click', (event) => {

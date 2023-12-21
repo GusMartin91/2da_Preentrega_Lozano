@@ -1,12 +1,32 @@
 const realTimeProductsSocket = io()
 const productList = document.getElementById('productsList');
+const currentUserEmail = localStorage.getItem('currentUserEmail');
 
-realTimeProductsSocket.emit("message", "Cliente (realTimeProducts)")
-realTimeProductsSocket.on("realTimeProducts", ({ products }) => {
+realTimeProductsSocket.emit("messageRTP", currentUserEmail)
+realTimeProductsSocket.on("realTimeProducts", ({ products, cart }) => {
   if (productList) {
     productList.innerHTML = '';
     products.forEach(product => {
       const { thumbnail, title, description, price, code, stock, _id } = product
+      const cartProduct = cart.products.find(cartItem => cartItem.productId === _id);
+      const quantityInCart = cartProduct ? cartProduct.quantity : ''
+      let contador
+      if (quantityInCart > 1) {
+        contador = `<div class="mb-2">
+        <button type="button" class="btn btn-danger btn-subtract" data-product-id="${_id}">-</button>
+        <span class="mx-2"><b>${quantityInCart}</b></span>
+        <button type="button" class="btn btn-primary btn-add" data-product-id="${_id}">+</button>
+        </div> `
+      } else if (quantityInCart === 1) {
+        contador = `<div class="mb-2">
+        <button type="button" class="btn btn-danger btn-delete" data-product-id="${_id}">-</button>
+        <span class="mx-2"><b>${quantityInCart}</b></span>
+        <button type="button" class="btn btn-primary btn-add" data-product-id="${_id}">+</button>
+        </div> `
+      } else {
+        contador = `<div style="height: 46px;"></div>`
+      }
+
       productList.innerHTML += `
     <div class="col-md-6 col-lg-4" id="${_id}">
       <div class="card mt-4 bg-light" style="width: 100%;">
@@ -31,10 +51,14 @@ realTimeProductsSocket.on("realTimeProducts", ({ products }) => {
           <p class="card-text">Código: ${code}</p>
           <p class="card-text">Stock: ${stock}</p>
         </div>
-        <div class="card-footer text-center">
-          <a href="/realTimeProducts/${_id}" title="Ver Mas" class="btn btn-info"><i class="fa-regular fa-circle-info"></i></a>
-          <button title="Editar" onclick="botonEditar('${_id}')" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editModal" data-bs-title="${title}" data-bs-stock="${stock}" data-bs-code="${code}" data-bs-description="${description}" data-bs-price="${price}" data-bs-thumbnail="${thumbnail}"><i class="fa-regular fa-pen-to-square"></i></button>
-          <button title="Eliminar" class="btn btn-danger" onclick="deleteProduct('${_id}')"><i class="fa-regular fa-trash-can"></i></button>
+        <div class="card-footer text-center ps-0 pe-0">
+          ${contador}
+          <div>
+            <button title="Agregar al Carrito" class="btn btn-success position-relative" onclick="btnAddToCart('${_id}')"><i class="fa-regular fa-shopping-cart"></i></button>
+            <a href="/realTimeProducts/${_id}" title="Ver Mas" class="btn btn-info"><i class="fa-regular fa-circle-info"></i></a>
+            <button title="Editar" onclick="botonEditar('${_id}')" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#editModal" data-bs-title="${title}" data-bs-stock="${stock}" data-bs-code="${code}" data-bs-description="${description}" data-bs-price="${price}" data-bs-thumbnail="${thumbnail}"><i class="fa-regular fa-pen-to-square"></i></button>
+            <button title="Eliminar" class="btn btn-danger" onclick="deleteProduct('${_id}')"><i class="fa-regular fa-trash-can"></i></button>
+          </div>
         </div>
       </div>
     </div>
@@ -44,7 +68,23 @@ realTimeProductsSocket.on("realTimeProducts", ({ products }) => {
     console.log("Elemento 'product-list' no encontrado en el DOM");
   }
 })
+productList.addEventListener('click', (event) => {
+  const target = event.target;
 
+  const productId = target.dataset.productId;
+  console.log(productId);
+  if (target.classList.contains('btn-add')) {
+    realTimeProductsSocket.emit('updateCart', { productId, action: 'add' });
+  }
+
+  if (target.classList.contains('btn-subtract')) {
+    realTimeProductsSocket.emit('updateCart', { productId, action: 'subtract' });
+  }
+
+  if (target.classList.contains('btn-delete')) {
+    realTimeProductsSocket.emit('deleteFromCart', { productId });
+  }
+});
 document.getElementById('addProductForm').addEventListener('submit', function (event) {
   event.preventDefault();
   const title = document.getElementById('title').value;
@@ -136,4 +176,7 @@ function deleteProduct(productId) {
       realTimeProductsSocket.emit('deleteProduct', productId);
     }
   });
+}
+function btnAddToCart(productId) {
+  realTimeProductsSocket.emit('addToCart', { productId, currentUserEmail });
 }

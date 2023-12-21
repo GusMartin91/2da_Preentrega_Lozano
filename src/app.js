@@ -14,13 +14,14 @@ import messageDao from "./daos/dbManager/message.dao.js";
 import cartDao from "./daos/dbManager/cart.dao.js";
 import path from 'path';
 import { fileURLToPath } from 'url'
+import { log } from 'util';
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const app = express()
 const httpServer = app.listen(PORT, () => console.log(`Server listening on port: ${PORT}`))
 const socketServer = new Server(httpServer)
-
+let userEmailApp;
 mongoose.connect(`mongodb+srv://gusmartin91:${password}@ecommerce.o43oskf.mongodb.net/${db_name}?retryWrites=true&w=majority`)
     .then(() => console.log("DB Connected"))
     .catch((err) => console.log(err))
@@ -44,11 +45,12 @@ app.use('/api/messages', messagesRouter);
 
 socketServer.on('connection', async (socketClient) => {
 
-    socketClient.emit('realTimeProducts', { products: await productDao.getAllProducts() });
-
-    socketClient.on('message', (data) => {
+    socketClient.on('messageRTP',async (data) => {
         console.log('Cliente Conectado: ', data);
+        userEmailApp = data
+        socketClient.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: await cartDao.getCartByUser(userEmailApp) });
     });
+
 
     socketClient.on('addProduct', async (newProduct) => {
         await productDao.createProduct(newProduct);
@@ -115,8 +117,13 @@ socketServer.on('connection', async (socketClient) => {
         }));
         socketClient.emit('productsCartInfo', productsInfo);
     });
+    socketClient.on('addToCart', async ({productId, currentUserEmail}) => {
+        await cartDao.addToCart(currentUserEmail, productId, 1)
+        socketClient.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: await cartDao.getCartByUser(currentUserEmail) });
+    });
 
     socketClient.on('updateCart', async ({ productId, action }) => {
+        userEmail=userEmail?userEmail:userEmailApp
         const userCart = await cartDao.getCartByUser(userEmail);
         if (userCart) {
             const productIndex = userCart.products.findIndex((item) => item.productId === productId);
@@ -144,6 +151,7 @@ socketServer.on('connection', async (socketClient) => {
                     };
                 }));
                 socketClient.emit('productsCartInfo', productsInfo);
+                socketClient.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: await cartDao.getCartByUser(userEmail) });
             }
         }
     });
@@ -162,6 +170,8 @@ socketServer.on('connection', async (socketClient) => {
                 };
             }));
             socketClient.emit('productsCartInfo', productsInfo);
+            socketClient.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: await cartDao.getCartByUser(userEmail) });
+console.log(userEmail);
         }
     });
 });
