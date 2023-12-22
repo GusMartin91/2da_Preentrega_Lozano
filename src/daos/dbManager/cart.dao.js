@@ -8,14 +8,15 @@ class CartDao {
     async getCartByUser(userId) {
         let cart = await this.model.findOne({ userId });
         if (!cart) {
-          cart = await this.model.findOneAndUpdate(
-            { userId },
-            { userId, products: [] },
-            { upsert: true, new: true }
-          );
+            try {
+                cart = await this.model.create({ userId, products: [] });
+            } catch (error) {
+                console.error("Error al crear el carro:", error.message);
+            }
         }
         return cart;
-      }
+    }
+
 
     async addToCart(userId, productId, quantity) {
         const cart = await this.getCartByUser(userId);
