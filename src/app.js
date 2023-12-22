@@ -45,9 +45,9 @@ app.use('/api/messages', messagesRouter);
 
 socketServer.on('connection', async (socketClient) => {
 
-    socketClient.on('messageRTP',async (data) => {
-        console.log('Cliente Conectado: ', data);
-        userEmailApp = data
+    socketClient.on('messageRTP',async (email) => {
+        console.log('Cliente Conectado: ', email);
+        userEmailApp = email
         socketClient.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: await cartDao.getCartByUser(userEmailApp) });
     });
 

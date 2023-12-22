@@ -6,8 +6,16 @@ class CartDao {
     }
 
     async getCartByUser(userId) {
-        return await this.model.findOne({ userId });
-    }
+        let cart = await this.model.findOne({ userId });
+        if (!cart) {
+          cart = await this.model.findOneAndUpdate(
+            { userId },
+            { userId, products: [] },
+            { upsert: true, new: true }
+          );
+        }
+        return cart;
+      }
 
     async addToCart(userId, productId, quantity) {
         const cart = await this.getCartByUser(userId);
