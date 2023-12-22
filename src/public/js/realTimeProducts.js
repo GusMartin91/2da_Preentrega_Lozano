@@ -6,7 +6,7 @@ realTimeProductsSocket.emit("messageRTP", currentUserEmail)
 realTimeProductsSocket.on("realTimeProducts", ({ products, cart }) => {
   if (productList) {
     productList.innerHTML = '';
-    console.log(cart.products);
+    console.log(cart);
     products.forEach(product => {
       const { thumbnail, title, description, price, code, stock, _id } = product
       const cartProduct = cart.products.find(cartItem => cartItem.productId === _id);

@@ -54,18 +54,17 @@ socketServer.on('connection', async (socketClient) => {
 
     socketClient.on('addProduct', async (newProduct) => {
         await productDao.createProduct(newProduct);
-        socketServer.emit('realTimeProducts', { products: await productDao.getAllProducts() });
+        socketClient.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: await cartDao.getCartByUser(userEmailApp) });
     });
 
     socketClient.on('editProduct', async ({ productId, editedProduct }) => {
         await productDao.updateProduct(productId, editedProduct);
-        socketServer.emit('realTimeProducts', { products: await productDao.getAllProducts() });
-        socketClient.emit('productDetails', { product: await productDao.getProductById(productId) });
+        socketClient.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: await cartDao.getCartByUser(userEmailApp) });
     });
 
     socketClient.on('deleteProduct', async (productId) => {
         await productDao.deleteProduct(productId);
-        socketServer.emit('realTimeProducts', { products: await productDao.getAllProducts() });
+        socketClient.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: await cartDao.getCartByUser(userEmailApp) });
     });
 
     socketClient.on('userConnected', async (currentUserEmail) => {
