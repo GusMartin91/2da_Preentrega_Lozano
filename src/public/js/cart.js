@@ -1,5 +1,6 @@
 const cartSocket = io();
 const cartContainer = document.getElementById('cart-container');
+const checkoutBTN = document.getElementById('checkout-btn');
 const totalAmountElement = document.getElementById('total-amount');
 const userEmail = document.getElementById('user-email');
 const currentUserEmail = localStorage.getItem('currentUserEmail');
@@ -65,9 +66,6 @@ cartContainer.addEventListener('click', (event) => {
 });
 
 cartSocket.on('userCart', ({ userCart, productInfo }) => {
-    
-    console.log('Datos del carrito del usuario:', userCart);
-    console.log('Información del producto:', productInfo);
     cartContainer.innerHTML = '';
     userCart.products.forEach(async (product) => {
         cartContainer.innerHTML += `
@@ -98,3 +96,7 @@ cartSocket.on('userCart', ({ userCart, productInfo }) => {
                 </div>`;
     });
 });
+
+function vaciarCarritoBTN() {
+    cartSocket.emit('clearCart');
+}

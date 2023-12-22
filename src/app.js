@@ -157,22 +157,25 @@ socketServer.on('connection', async (socketClient) => {
     });
 
     socketClient.on('deleteFromCart', async ({ productId }) => {
-        const userCart = await cartDao.getCartByUser(userEmail);
-        if (userCart) {
-            userCart.products = userCart.products.filter((item) => item.productId !== productId);
-            await userCart.save();
-            const productsInfo = await Promise.all(userCart.products.map(async (product) => {
-                const productInfo = await productDao.getProductById(product.productId);
-                return {
-                    productId: product.productId,
-                    info: productInfo,
-                    quantity: product.quantity
-                };
-            }));
-            socketClient.emit('productsCartInfo', productsInfo);
-            socketClient.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: await cartDao.getCartByUser(userEmail) });
-console.log(userEmail);
-        }
+        await cartDao.removeFromCart(userEmailApp, productId);
+        const updatedCart = await cartDao.getCartByUser(userEmailApp);
+        const productsInfo = await Promise.all(updatedCart.products.map(async (product) => {
+            const productInfo = await productDao.getProductById(product.productId);
+            return {
+                productId: product.productId,
+                info: productInfo,
+                quantity: product.quantity
+            };
+        }));
+        socketClient.emit('productsCartInfo', productsInfo);
+        socketClient.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: updatedCart });
+    });
+    
+    socketClient.on('clearCart', async () => {
+        await cartDao.clearCart(userEmailApp);
+        console.log(userEmailApp)
+        const updatedCart = await cartDao.getCartByUser(userEmailApp);
+        socketClient.emit('productsCartInfo', []);
     });
 });
 
