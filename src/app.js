@@ -54,17 +54,18 @@ socketServer.on('connection', async (socketClient) => {
 
     socketClient.on('addProduct', async (newProduct) => {
         await productDao.createProduct(newProduct);
-        socketClient.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: await cartDao.getCartByUser(userEmailApp) });
+        socketServer.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: await cartDao.getCartByUser(userEmailApp) });
     });
 
     socketClient.on('editProduct', async ({ productId, editedProduct }) => {
         await productDao.updateProduct(productId, editedProduct);
-        socketClient.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: await cartDao.getCartByUser(userEmailApp) });
+        socketClient.emit('productDetails', { product: await productDao.getProductById(productId) });
+        socketServer.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: await cartDao.getCartByUser(userEmailApp) });
     });
 
     socketClient.on('deleteProduct', async (productId) => {
         await productDao.deleteProduct(productId);
-        socketClient.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: await cartDao.getCartByUser(userEmailApp) });
+        socketServer.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: await cartDao.getCartByUser(userEmailApp) });
     });
 
     socketClient.on('userConnected', async (currentUserEmail) => {
