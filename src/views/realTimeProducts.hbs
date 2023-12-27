@@ -1,6 +1,7 @@
 <div class="container-fluid p-4 bg-light" style="background-color: #e2e2e2; border-radius: 40px; padding: 30px;">
   <h1 class="display-4 text-primary text-center">
-    <strong>Lista de Productos en Tiempo Real</strong></h1>
+    <strong>Lista de Productos en Tiempo Real</strong>
+  </h1>
 
   <div class="row mt-4">
     <div class="col-md-3 border rounded p-4 bg-secondary border-3">
@@ -38,6 +39,12 @@
 
     <div class="col-md-9 border rounded p-4 bg-info border-3">
       <h3 class="mb-3 text-center">Productos Disponibles</h3>
+      <div>
+        <h5>Ordenar por precio:</h5>
+          <button type="button" class="btn btn-secondary" onclick="sortByPrice('asc')">Menor Precio</button>
+          <button type="button" class="btn btn-secondary" onclick="sortByPrice('desc')">Mayor Precio</button>
+          <button type="button" class="btn btn-secondary" onclick="resetPrice()">Restablecer Orden</button>
+      </div>
       <div class="row mb-4" id="productsList">
       </div>
     </div>
@@ -86,7 +93,7 @@
     </div>
   </div>
 </div>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/js/realTimeProducts.js"></script>
-    <script src="/js/sweetalert2.all.min.js"></script>
-    <script src="/js/jquery.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/realTimeProducts.js"></script>
+<script src="/js/sweetalert2.all.min.js"></script>
+<script src="/js/jquery.min.js"></script>

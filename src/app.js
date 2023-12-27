@@ -14,7 +14,6 @@ import messageDao from "./daos/dbManager/message.dao.js";
 import cartDao from "./daos/dbManager/cart.dao.js";
 import path from 'path';
 import { fileURLToPath } from 'url'
-import { log } from 'util';
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -45,7 +44,7 @@ app.use('/api/messages', messagesRouter);
 
 socketServer.on('connection', async (socketClient) => {
 
-    socketClient.on('messageRTP',async (email) => {
+    socketClient.on('messageRTP', async (email) => {
         console.log('Cliente Conectado: ', email);
         userEmailApp = email
         socketClient.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: await cartDao.getCartByUser(userEmailApp) });
@@ -55,6 +54,9 @@ socketServer.on('connection', async (socketClient) => {
     socketClient.on('addProduct', async (newProduct) => {
         await productDao.createProduct(newProduct);
         socketServer.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: await cartDao.getCartByUser(userEmailApp) });
+    });
+    socketClient.on('filtrando', async (email) => {
+        socketServer.emit('carroParaFiltro', { cart: await cartDao.getCartByUser(email) });
     });
 
     socketClient.on('editProduct', async ({ productId, editedProduct }) => {
@@ -117,16 +119,16 @@ socketServer.on('connection', async (socketClient) => {
         }));
         socketClient.emit('productsCartInfo', productsInfo);
     });
-    socketClient.on('addToCart', async ({productId, currentUserEmail}) => {
+    socketClient.on('addToCart', async ({ productId, currentUserEmail }) => {
         await cartDao.addToCart(currentUserEmail, productId, 1)
         socketClient.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: await cartDao.getCartByUser(currentUserEmail) });
     });
 
     socketClient.on('updateCart', async ({ productId, action }) => {
-        userEmail=userEmail?userEmail:userEmailApp
+        userEmail = userEmail ? userEmail : userEmailApp
         const userCart = await cartDao.getCartByUser(userEmail);
         if (userCart) {
-            const productIndex = userCart.products.findIndex((item) => item.productId === productId);
+            const productIndex = userCart.products.findIndex((item) => item.productId._id.toString() === productId);
             if (productIndex !== -1) {
                 const product = userCart.products[productIndex];
                 switch (action) {
@@ -157,24 +159,34 @@ socketServer.on('connection', async (socketClient) => {
     });
 
     socketClient.on('deleteFromCart', async ({ productId }) => {
-        await cartDao.removeFromCart(userEmailApp, productId);
-        const updatedCart = await cartDao.getCartByUser(userEmailApp);
-        const productsInfo = await Promise.all(updatedCart.products.map(async (product) => {
-            const productInfo = await productDao.getProductById(product.productId);
-            return {
-                productId: product.productId,
-                info: productInfo,
-                quantity: product.quantity
-            };
-        }));
-        socketClient.emit('productsCartInfo', productsInfo);
-        socketClient.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: updatedCart });
+        try {
+            if (productId == null) {
+                console.error("productId is null or undefined");
+                return;
+            }
+
+            await cartDao.removeFromCart(userEmailApp, productId);
+
+            const updatedCart = await cartDao.getCartByUser(userEmailApp);
+            const productsInfo = await Promise.all(updatedCart.products.map(async (product) => {
+                const productInfo = await productDao.getProductById(product.productId._id.toString());
+                return {
+                    productId: product.productId._id.toString(),
+                    info: productInfo,
+                    quantity: product.quantity
+                };
+            }));
+
+            socketClient.emit('productsCartInfo', productsInfo);
+            socketClient.emit('realTimeProducts', { products: await productDao.getAllProducts(), cart: updatedCart });
+        } catch (error) {
+            console.error("Error handling deleteFromCart:", error.message);
+        }
     });
-    
+
+
     socketClient.on('clearCart', async () => {
         await cartDao.clearCart(userEmailApp);
-        console.log(userEmailApp)
-        const updatedCart = await cartDao.getCartByUser(userEmailApp);
         socketClient.emit('productsCartInfo', []);
     });
 });

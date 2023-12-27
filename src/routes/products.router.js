@@ -1,12 +1,33 @@
 import { Router } from "express";
 import productDao from "../daos/dbManager/product.dao.js";
-
 const router = Router();
-
+productDao.model.paginate();
 router.get('/', async (req, res) => {
     try {
-        const products = await productDao.getAllProducts();
-        res.json(products);
+        const {  limit, page, sort, query } = req.query;
+
+        const options = {
+            limit: parseInt(limit, 10) || 10,
+            page: parseInt(page, 10) || 1,
+            sort: sort === 'asc' ? 'price' : sort === 'desc' ? '-price' : '-createdAt',
+        };
+
+        const filter = query ? { $text: { $search: query } } : {};
+        const result = await productDao.model.paginate(filter, options);
+        const response = {
+            status: "success",
+            payload: result.docs,
+            totalPages: result.totalPages,
+            prevPage: result.prevPage,
+            nextPage: result.nextPage,
+            page: result.page,
+            hasPrevPage: result.hasPrevPage,
+            hasNextPage: result.hasNextPage,
+            prevLink: result.hasPrevPage ? `/api/products/?limit=${options.limit}&page=${result.prevPage}&sort=${options.sort}` : null,
+            nextLink: result.hasNextPage ? `/api/products/?limit=${options.limit}&page=${result.nextPage}&sort=${options.sort}` : null,
+        };
+
+        res.json(response);
     } catch (error) {
         console.log(error);
         res.json({
